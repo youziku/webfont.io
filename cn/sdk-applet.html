@@ -1,4 +1,4 @@
-﻿
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -215,9 +215,101 @@
 
             <h1>微信小程序SDK</h1>
 
-            <h2>请联系技术人员获取微信小程序的SDK。</h2>
+            <h2>介绍</h2>
 
+            <p>该SDK适用于在微信小程序项目中调用已在本地部署完成的字体服务的API。</p>
+            <p>将该SDK加入到项目中后，小程序将通过它可以实现在线字体的快速调用。</p>
+            <p>无须再加完整字体包，碎片化加载；即时输入文字，即时拉取所需字型，让小程序也能轻松玩转中文字体。</p>
 
+            <h2>实例</h2>
+            <h3>引用sdk </h3>
+            <p>1. 拷贝webfont.js和socket.io-wxapp.js到要引用的js同级目录下(如果放到其他目录，注意更改目录路径)。</p>
+            <p>2. 在editor编辑框使用(推荐使用editor编辑框)。</p>
+            <pre><code>&lt;editor id="editor"
+class="ql-container"
+placeholder="{{init_text}}"
+bindstatuschange="onStatusChange"
+style="font-family:{{family}}"
+bindready="onEditorReady"
+bindinput="bindEditorInput"&gt;
+&lt;/editor&gt;</code></pre>
+
+            <h3>调用sdk </h3>
+            <p>在js文件里面引用，参考index.js使用，初始化使用，编辑框输入使用。</p>
+            <h4>1. 初始化加载默认字体：</h4>
+            <ul>
+                <li>1.调用sdk获取字体二进制数据，然后转成base64格式</li>
+                <li>2.使用wx.loadFontFace进行加载</li>
+            </ul>
+            <pre><code>
+        var wxwebfont = require('webfont.js');
+        var zikuclient = null;
+        //初始化
+        onLoad: function () {
+            const that = this
+            this.updatePosition(0)
+            let keyboardHeight = 0
+            var url = '127.0.0.1:8181';
+            zikuclient = new wxwebfont.webfont(url);
+            var accesskey = this.data.fontkey;
+            var family = this.data.family;
+            var content = this.data.init_text;
+            var data = {
+                Tags: []
+            };
+            data.Tags.push({AccessKey: accesskey, Content: content, Tag: '#Text1'});
+            zikuclient.getBatchFontFace(data, function (result) {
+                var length = result.FontfaceList.length;
+                for (var i = 0; i < length; i++) {
+                    if (result.FontfaceList[i].FontFace.length < 1) {
+                        continue;
+                    }
+                    wx.loadFontFace({
+                        global: true,
+                        family: family,
+                        source: 'url('+ result.FontfaceList[i].FontFace + ') format("truetype")',
+                        success: console.log
+                    });
+                };
+            });
+        }
+                </code></pre>
+            <h4>1. 输入字的时候更新字体：</h4>
+            <ul>
+                <li>1.文本更新时候，需要同样需要调用sdk获取字体，然后使用wx.loadFontFace</li>
+                <li>2.注意：给wx.loadFontFace的参数family的value全局唯一，不要更改</li>
+            </ul>
+            <pre><code>
+            bindEditorInput:function(e) {
+            var inputtext = e.detail.text;
+            var accesskey = this.data.fontkey;
+            var family = this.data.family;
+            var data = {
+                Tags: []
+            };
+            data.Tags.push({AccessKey: accesskey, Content: inputtext, Tag: '#Text1'});
+            zikuclient.getBatchFontFace(data, function (result) {
+                var length = result.FontfaceList.length;
+                for (var i = 0; i < length; i++) {
+                    if (result.FontfaceList[i].FontFace.length < 1) {
+                        continue;
+                    }
+                    wx.loadFontFace({
+                        global: true,
+                        family: family,
+                        source: 'url(' + result.FontfaceList[i].FontFace + ') format("truetype")',
+                        success: console.log
+                    });
+                }
+                ;
+                console.log("load font done");
+            });
+            this.setData({init_text: inputtext});
+            console.log("end");
+        },
+                </code></pre>
+            <h4>3. 其他字体更新：</h4>
+            <p>当设置字体时候，参考上一步的更新，或者bindButtonTap函数</p>            
 
 
         </section>
@@ -239,6 +331,7 @@
         $youziku.load("body,code", "53826392-bf38-43ca-b0b4-b0cb4c79cc38", "CenturyGothic,Source-Han-Light");
         $youziku.draw();
     </script>
+
 
 </body>
 </html>
